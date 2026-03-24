@@ -1,0 +1,208 @@
+---
+title: "Learning Data Analysis"
+format: 
+  html:
+    embed-resources: true
+---
+
+```{r}
+#| message: false
+library(tidyverse)
+library(ggplot2)
+```
+
+# Reading data file
+
+## Text-based data (csv)
+
+:::{.callout-note}
+
+This is how to read CSV file into R.
+
+:::
+
+```{r}
+#| message: false
+#| warning: false
+data <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-04-15/penguins.csv')
+data
+```
+
+:::{.callout-note}
+
+This is how to write a CSV file in R.
+
+:::
+
+```{r}
+write_csv(data, here::here("data/penguins-r.csv"))
+```
+
+
+# Data Manipulation
+
+## Manipulating Variables
+
+:::{.callout-note}
+
+This is how to select variables in R.
+
+:::
+
+```{r}
+data |>
+  select(species, island, sex)
+```
+
+:::{.callout-note}
+
+This is how to rename variables in R.
+
+:::
+
+```{r}
+data |>
+  rename(body_mass_kg = body_mass)
+```
+
+:::{.callout-note}
+
+This is how to compute variables in R.
+
+:::
+
+```{r}
+data |>
+  mutate(body_mass_kg = body_mass/1000)
+```
+
+
+## Manipulating Observations
+
+:::{.callout-note}
+
+This is how you select rows in R.
+
+:::
+
+```{r}
+data |> 
+  filter(species == "Adelie")
+```
+
+:::{.callout-note}
+
+This is how to get unique rows in R.
+
+:::
+
+```{r}
+data |> 
+  distinct(species, island)
+```
+
+:::{.callout-note}
+
+This is how to arrange the row in R.
+
+:::
+
+```{r}
+data |> 
+  arrange(desc(bill_len))
+```
+
+
+## Grouped operation
+
+:::{.callout-note}
+This is how to group data by one or more variables in R.
+:::
+
+```{r}
+data |> 
+  group_by(species) |> 
+  mutate(above_average_mass = body_mass > mean(body_mass, na.rm = TRUE)) |> 
+  ungroup()
+```
+
+## Summarising Observations
+
+```{r}
+data |> 
+  summarise(
+    min_flipper = min(flipper_len, na.rm = TRUE),
+    median_flipper = median(flipper_len, na.rm = TRUE),
+    max_flipper = max(flipper_len, na.rm = TRUE)
+  )
+
+data |>
+  group_by(species) |>
+  summarise(average_bill_length = mean(bill_len, na.rm = TRUE))
+
+data |> 
+  count(species, island)
+```
+
+
+## Joining Tables
+
+:::{.callout-note}
+
+This is how you combine data in R.
+
+:::
+
+```{r}
+#| code-fold: true
+split <- data |> 
+  group_by(year) |> 
+  group_split()
+
+data_07 <- split[[1]]
+data_08 <- split[[2]]
+```
+
+```{r}
+bind_rows(data_07, data_08)
+```
+
+:::{.callout-note}
+
+This is how to join the data in R.
+
+:::
+
+```{r}
+penguin_info <- tibble(
+  species = c("Adelie", "Chinstrap", "Gentoo"),
+  scientific_name = c("Pygoscelis adeliae", "Pygoscelis antarcticus", "Pygoscelis papua"),
+  nest_type = c("Nests made from stones", "Nests made from stones", "Nests lined with pebbles and vegetation"),
+  conservation_status = c("Least Concern", "Least Concern", "Least Concern")
+)
+penguin_info
+```
+
+```{r}
+data |>
+  left_join(penguin_info, by = "species")
+```
+
+
+# Data Visualisation
+
+In R, we use ggplot2.
+
+```{r}
+library(ggplot2)
+
+data |> 
+  ggplot(aes(x = bill_len, y = body_mass, color = species)) +
+  geom_point()
+```
+
+
+
+
+
+

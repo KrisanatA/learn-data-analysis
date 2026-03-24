@@ -1,0 +1,184 @@
+---
+title: "Learning Data Analysis"
+engine: julia
+---
+# Set up packages
+
+1. Install packages using `Pkg`. This step is only needed once.
+```{julia}
+#| include: false
+using Pkg; Pkg.activate(".")
+using Markdown
+Pkg.add("DataFrames")
+Pkg.add("Statistics")
+Pkg.add("Gadfly")
+Pkg.add("CSV")
+Pkg.add("Downloads");
+```
+
+2. Load the installed packages.
+```{julia}
+#| include: false
+using DataFrames, Statistics, Gadfly, CSV, Downloads 
+```
+
+
+# Reading data file
+
+## Text-based data (csv)
+
+:::{.callout-note}
+This is how to read CSV file into Julia.
+:::
+
+Note that strings (`::String`) are encapsulated in `"..."`, while `'.'` is reserved for single characters (`::Char`).
+```{julia}
+url = "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-04-15/penguins.csv"
+data = CSV.read(Downloads.download(url), DataFrame; missingstring="NA")
+data
+```
+You do not need to explicitly refer to the package, e.g. `download` instead of `Downloads.download` will work as well.
+
+:::{.callout-note}
+This is how to write a CSV file in Julia.
+:::
+
+```{julia}
+CSV.write("data/penguins-julia.csv", data)
+```
+
+
+# Data Manipulation
+
+## Manipulating Variables
+
+:::{.callout-note}
+This is how to select variables in Julia.
+:::
+
+```{julia}
+select(data, :species, :island, :sex)
+```
+Note that we have used `:species` instead of `"species"`, the latter will work as well, the former makes use of the `Symbol` type in Julia. Symbols are interned, which makes them more efficient for certain operations, including comparisons.
+
+:::{.callout-note}
+This is how to rename variables in Julia.
+:::
+
+```{julia}
+data = rename(data, :body_mass => :body_mass_kg)
+```
+
+:::{.callout-note}
+This is how to compute variables in Julia.
+:::
+
+```{julia}
+data = transform(data, :body_mass_kg => (x -> x / 1000) => :body_mass_tonnes)
+```
+
+In Julia, functions are first class objects, so alternatively you can perform an analogous operation with:
+
+```{julia}
+f(x) = x / 1000
+
+data = transform(data, :body_mass_tonnes => f => :body_mass_megatonnes)
+```
+## Manipulating Observations
+
+:::{.callout-note}
+This is how you select rows in Julia.
+:::
+
+```{julia}
+data[data.species .== "Adelie", :]
+```
+
+:::{.callout-note}
+This is how to get unique rows in Julia.
+:::
+
+```{julia}
+unique(data, [:species, :island])
+```
+
+:::{.callout-note}
+This is how to arrange the row in Julia.
+:::
+
+```{julia}
+sort(data, [:bill_len, :bill_dep])
+```
+
+
+## Grouped operation
+
+:::{.callout-note}
+This is how to group data by one or more variables in Julia.
+:::
+
+
+```{julia}
+groupby(data, :species) |> d -> transform(d, :body_mass_kg => (x -> x .> mean(skipmissing(x))) => :above_average_mass)
+#groupby(data, :species) |> x -> transform(x, :body_mass_kg => (y -> y .> mean(skipmissing(y))) => :above_average_mass, ungroup=false) # this returns grouped data
+```
+
+## Summarising Observations
+
+```{julia}
+data |>
+  x -> (
+    :min_flipper => minimum(x[:, :flipper_len] |> skipmissing),
+    :median_flipper => median(x[:, :flipper_len] |> skipmissing),
+    :max_flipper => maximum(x[:, :flipper_len] |> skipmissing)
+  ) |> DataFrame
+
+data |>
+  x -> groupby(x, :species) |>
+  G -> (g[1, :species] => mean(g[:, :bill_len] |> skipmissing) for g in G) |> DataFrame
+```
+
+## Joining Tables
+
+:::{.callout-note}
+This is how you combine data in Julia.
+:::
+
+```{julia}
+split = groupby(data, :year)
+
+data_07 = DataFrame(split[1])
+data_08 = DataFrame(split[2])
+```
+
+```{julia}
+vcat(data_07, data_08)
+```
+
+:::{.callout-note}
+This is how to join the data in Julia.
+:::
+
+```{julia}
+penguin_info = DataFrame(
+  species = ["Adelie", "Chinstrap", "Gentoo"],
+  scientific_name = ["Pygoscelis adeliae", "Pygoscelis antarcticus", "Pygoscelis papua"],
+  nest_type = ["Nests made from stones", "Nests made from stones", "Nests lined with pebbles and vegetation"],
+  conservation_status = ["Least Concern", "Least Concern", "Least Concern"]
+)
+penguin_info
+```
+
+```{julia}
+leftjoin(data, penguin_info, on=:species)
+```
+
+
+# Data Visualisation
+
+`Plots` is the standard Julia library for plotting, but for plotting DataFrames, `Gadfly` is a solid interactive option.
+
+```{julia}
+Gadfly.plot(data, x=:bill_len, y=:body_mass_kg, color=:species, 
+    Guide.title("Bill Length vs Body Mass"), Guide.xlabel("Bill Length (mm)"), Guide.ylabel("Body Mass (kg)"))
+```
