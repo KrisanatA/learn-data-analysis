@@ -1,5 +1,8 @@
 ---
 title: "Learning Data Analysis"
+format:
+  html:
+    embed-resources: true
 engine: julia
 ---
 # Set up packages
