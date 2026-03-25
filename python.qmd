@@ -1,0 +1,233 @@
+---
+title: "Learning Data Analysis"
+format: 
+  html:
+    embed-resources: true
+---
+
+
+```{python}
+# uv venv
+# uv pip install pandas plotnine jupyter
+# source .venv/bin/activate
+# quarto check jupyter
+# %pip install [pkgs]
+import pandas as pd
+from plotnine import *
+
+pd
+```
+
+# Reading data file
+
+## Text-based data (csv)
+
+:::{.callout-note}
+
+This is how to read CSV file in python.
+
+:::
+
+```{python}
+data = pd.read_csv(
+    "https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-04-15/penguins.csv"
+)
+data
+```
+
+:::{.callout-note}
+
+This is how to write a CSV file in python.
+
+:::
+
+:::{.callout-important}
+* The reason why we set index=False is to make sure that the resulting csv file does not have a column dedicated to the row numbers.
+* Note that we call the `to_csv` function from the DataFrame itself.
+:::
+
+```{python}
+data.to_csv("data/penguins-py.csv", index=False)
+```
+
+
+# Data Manipulation
+
+## Manipulating Variables
+
+:::{.callout-note}
+
+This is how to select variables in python.
+
+:::
+
+:::{.callout-important}
+* It's also possible to select columns using `iloc` but that requires us to specify columns by number
+* The first `:` means that all the rows needs to be selected.
+:::
+
+```{python}
+data.loc[:, ["species", "island", "sex"]]
+```
+
+:::{.callout-note}
+
+This is how to rename variables in python.
+
+:::
+
+:::{.callout-important}
+* While R says `rename`(*new_name* = *old_name*), python says `rename`({*old_name*:*new_name*})
+:::
+
+```{python}
+data.rename(columns={"body_mass": "body_mass_kg"})
+```
+
+:::{.callout-note}
+
+This is how to compute variables in python.
+
+:::
+```{python}
+data.loc[:, ["body_mass_kg"]] = data.body_mass / 1000
+data
+```
+
+
+## Manipulating Observations
+
+:::{.callout-note}
+
+This is how you select rows in python.
+
+:::
+
+```{python}
+data[data.species == "Adelie"]
+```
+
+:::{.callout-note}
+
+This is how to get unique rows in python.
+
+:::
+:::{.callout-important}
+
+- Value counts will give you counts of the groups as well. 
+- The reset index function simply makes the resulting counts readable as a DataFrame
+
+:::
+
+```{python}
+data[["species", "island"]].value_counts().reset_index()
+```
+
+:::{.callout-note}
+
+This is how to arrange the row in python.
+
+:::
+
+```{python}
+data.sort_values(["bill_len"], ascending=False)
+```
+
+## Grouped operation
+
+:::{.callout-note}
+This is how to group data by one or more variables in python.
+:::
+
+:::{.callout-important}
+The syntax can be somewhat confusing. 
+
+- First we `group_by` using `species`. 
+- Then we get `body_mass` column and apply a function to that column. 
+- The lambda notation is similiar to the anonymous functions defined using `\(x) x > x$mean()`
+- Finally we assign the resulting column to a new column.
+
+Think about how you would do it if you want to reference a different column
+:::
+
+```{python}
+data["above_average_mass"] = data.groupby("species")["body_mass"].transform(
+    lambda x: x > x.mean()
+)
+data
+```
+
+## Summarising Observations
+
+```{python}
+data["flipper_len"].agg(
+    min_flipper="min",
+    median_flipper="median",
+    max_flipper="max",
+)
+```
+
+```{python}
+data.groupby("species")["bill_len"].mean().rename("average_bill_length").reset_index()
+```
+
+## Joining Tables
+
+:::{.callout-note}
+
+This is how you combine data in python.
+
+:::
+
+```{python}
+# | code-fold: true
+grped = data.groupby("year")
+grped_dfs = [grped.get_group(x) for x in grped.groups]
+data_07 = grped_dfs[0]
+data_08 = grped_dfs[1]
+```
+
+```{python}
+pd.concat([data_07, data_08])
+```
+
+:::{.callout-note}
+
+This is how to join the data in python.
+
+:::
+
+```{python}
+penguin_info = pd.DataFrame(
+    {
+        "species": ["Adelie", "Chinstrap", "Gentoo"],
+        "scientific_name": [
+            "Pygoscelis adeliae",
+            "Pygoscelis antarcticus",
+            "Pygoscelis papua",
+        ],
+        "nest_type": [
+            "Nests made from stones",
+            "Nests made from stones",
+            "Nests lined with pebbles and vegetation",
+        ],
+        "conservation_status": ["Least Concern", "Least Concern", "Least Concern"],
+    }
+)
+penguin_info
+```
+
+```{python}
+pd.merge(data, penguin_info, how="left", on="species")
+```
+
+# Data Visualisation
+
+In python, we use plotnine. [Cheatsheet](https://github.com/rstudio/cheatsheets/blob/main/plotnine.pdf)
+
+```{python}
+(
+    ggplot(data=data)
+    + geom_point(mapping=aes(x="bill_len", y="body_mass", color="species"))
+)
+```
