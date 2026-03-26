@@ -186,6 +186,9 @@ penguin_info
 ```{r}
 data |>
   left_join(penguin_info, by = "species")
+
+left_join(data, penguin_info,
+by = "species")
 ```
 
 

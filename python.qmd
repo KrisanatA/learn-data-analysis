@@ -91,6 +91,7 @@ This is how to compute variables in python.
 :::
 ```{python}
 data.loc[:, ["body_mass_kg"]] = data.body_mass / 1000
+
 data
 ```
 
@@ -121,6 +122,8 @@ This is how to get unique rows in python.
 
 ```{python}
 data[["species", "island"]].value_counts().reset_index()
+
+data[["species", "island"]].drop_duplicates()
 ```
 
 :::{.callout-note}

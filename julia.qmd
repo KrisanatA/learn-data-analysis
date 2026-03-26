@@ -10,7 +10,7 @@ engine: julia
 1. Install packages using `Pkg`. This step is only needed once.
 ```{julia}
 #| include: false
-using Pkg; Pkg.activate(".")
+using Pkg; 
 using Markdown
 Pkg.add("DataFrames")
 Pkg.add("Statistics")
@@ -61,6 +61,8 @@ This is how to select variables in Julia.
 
 ```{julia}
 select(data, :species, :island, :sex)
+
+data[:, ["species", "island", "sex"]]
 ```
 Note that we have used `:species` instead of `"species"`, the latter will work as well, the former makes use of the `Symbol` type in Julia. Symbols are interned, which makes them more efficient for certain operations, including comparisons.
 
